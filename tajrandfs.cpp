@@ -214,6 +214,40 @@ void wypisz_graf(int reprezentacja) {
         }
     }
 }
+void generuj_DAG(int liczba_wierzcholkow, double nasycenie) 
+{
+    n = liczba_wierzcholkow;
+    
+    long long max_krawedzi = ((long long)n * (n - 1)) / 2; 
+    m = max_krawedzi * nasycenie;
+
+    ln.clear(); ms.clear(); lk.clear();
+    czas_wejscia.clear(); czas_wyjscia.clear();
+    stos_wynikowy.clear(); odwiedzone.clear(); sciezka.clear();
+    cykl = false; zegar = 0;
+
+    ln.resize(n + 1);
+    ms.resize(n + 1);
+    for(int i = 0; i <= n; i++) ms[i].resize(n + 1, false);
+    czas_wejscia.resize(n + 1, 0);
+    czas_wyjscia.resize(n + 1, 0);
+
+    int dodane_krawedzie = 0;
+    while(dodane_krawedzie < m) 
+    {
+        // u < v aby byl acykliczny
+        int u = 1 + rand() % (n - 1);
+        int v = u + 1 + rand() % (n - u);
+
+        if(ms[u][v] == false) 
+        {
+            ms[u][v] = true;
+            ln[u].push_back(v);
+            lk.push_back({u, v});
+            dodane_krawedzie++;
+        }
+    }
+}
 int main()
 {
     int opcja = -1;
