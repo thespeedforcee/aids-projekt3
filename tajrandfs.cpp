@@ -17,7 +17,7 @@ vector<int> stos_wynikowy;  //posortowane wierzchołki
 vector<int> sciezka;
 bool cykl = false;
 
-int zegar = 0;
+int licznik = 0;
 vector<int> czas_wejscia;
 vector<int> czas_wyjscia;
 
@@ -41,7 +41,7 @@ void wczytaj_z_pliku(string pliku)
     odwiedzone.clear();
     sciezka.clear();
     cykl = false;
-    zegar = 0;
+    licznik = 0;
 
     //struktury maja rozmiar n
     ln.resize(n + 1);
@@ -49,6 +49,8 @@ void wczytaj_z_pliku(string pliku)
     for(int i = 0; i <= n; i++) {
         ms[i].resize(n + 1, false);
     }
+    //lista krawedzi lk nie potrzebuje inicjalizacji
+
     czas_wejscia.resize(n + 1, 0);
     czas_wyjscia.resize(n + 1, 0);
 
@@ -56,6 +58,11 @@ void wczytaj_z_pliku(string pliku)
     for (int i = 0; i < m; i++) {
         int w1, w2;
         plik >> w1 >> w2;
+
+        if (w1 < 1 || w1 > n || w2 < 1 || w2 > n) { //jesli krawedzie niepoprawne
+            cout << "OSTRZEZENIE: Krawedz " << w1 << " -> " << w2 << " jest niepoprawna (poza zakresem)! Pomijam ja." << endl;
+            continue; 
+        }
         
         ln[w1].push_back(w2);
         ms[w1][w2] = true;
@@ -71,7 +78,7 @@ void tarjan_ln(int v)//v to wierzcholek od ktorego zaczynam wypisywac
     if(cykl) return;
 
     odwiedzone[v] = 1;        //1 - wierzcholek jest odwiedzany
-    czas_wejscia[v] = ++zegar; 
+    czas_wejscia[v] = ++licznik; 
     sciezka.push_back(v);
 
     for(int i=0; i<ln[v].size(); i++) 
@@ -100,11 +107,12 @@ void tarjan_ln(int v)//v to wierzcholek od ktorego zaczynam wypisywac
         if(odwiedzone[sasiad] == 0) // nie odwiedzone wczesniej
         {
             tarjan_ln(sasiad);
+            if(cykl) return; //zeby raz wypisal cykl i wyszedl
         }
     }
 
     odwiedzone[v] = 2;          // 2 to odwiedzony i bez cyklu
-    czas_wyjscia[v] = ++zegar;  // Zapisujemy moment przetworzenia
+    czas_wyjscia[v] = ++licznik;  // Zapisujemy moment przetworzenia
     stos_wynikowy.push_back(v); //dodaje do wyniku
     sciezka.pop_back(); //usuwa ostatni wierzcholek
 }
@@ -113,7 +121,7 @@ void tarjan_ms(int v)
     if(cykl) return;
 
     odwiedzone[v] = 1;        
-    czas_wejscia[v] = ++zegar; 
+    czas_wejscia[v] = ++licznik; 
     sciezka.push_back(v);
 
     for(int i = 1; i < ms.size(); i++) 
@@ -140,12 +148,13 @@ void tarjan_ms(int v)
             if(odwiedzone[sasiad] == 0) 
             {
                 tarjan_ms(sasiad); 
+                if(cykl) return; 
             }
         }
     }
 
     odwiedzone[v] = 2;          
-    czas_wyjscia[v] = ++zegar;  
+    czas_wyjscia[v] = ++licznik;  
     stos_wynikowy.push_back(v); 
     sciezka.pop_back();
 }
@@ -154,7 +163,7 @@ void tarjan_lk(int v)
     if(cykl) return;
 
     odwiedzone[v] = 1;        
-    czas_wejscia[v] = ++zegar; 
+    czas_wejscia[v] = ++licznik; 
     sciezka.push_back(v);
 
     for(int i = 0; i < lk.size(); i++) 
@@ -181,12 +190,13 @@ void tarjan_lk(int v)
             if(odwiedzone[sasiad] == 0) 
             {
                 tarjan_lk(sasiad); 
+                if(cykl) return; 
             }
         }
     }
 
     odwiedzone[v] = 2;          
-    czas_wyjscia[v] = ++zegar;  
+    czas_wyjscia[v] = ++licznik;  
     stos_wynikowy.push_back(v); 
     sciezka.pop_back();
 }
@@ -224,7 +234,7 @@ void generuj_DAG(int liczba_wierzcholkow, double nasycenie)
     ln.clear(); ms.clear(); lk.clear();
     czas_wejscia.clear(); czas_wyjscia.clear();
     stos_wynikowy.clear(); odwiedzone.clear(); sciezka.clear();
-    cykl = false; zegar = 0;
+    cykl = false; licznik = 0;
 
     ln.resize(n + 1);
     ms.resize(n + 1);
@@ -286,6 +296,11 @@ int main()
 
                 cout << "Podaj wierzcholek startowy: ";
                 cin >> start;
+                while(start<1 || start>n)
+                {
+                    cout<<"Blad! Podaj wierzcholek jeszcze raz"<<endl;
+                    cin >> start;
+                }
 
                 wypisz_graf(reprezentacja);
 
@@ -296,14 +311,14 @@ int main()
                 stos_wynikowy.clear();
                 sciezka.clear();
                 cykl = false;
-                zegar = 0;
+                licznik = 0;
 
                 auto start_czasu = chrono::high_resolution_clock::now();
 
                 if (reprezentacja == 1) {
                     tarjan_ln(start);
-                    for (int i = 1; i < ln.size(); i++) 
-                        if (!ln[i].empty() && odwiedzone[i] == 0) tarjan_ln(i); //tarjan od nowa
+                    for (int i = 1; i <=n; i++) 
+                        if (odwiedzone[i] == 0) tarjan_ln(i); //tarjan od nowa
                 } 
                 else if (reprezentacja == 2) {
                     tarjan_ms(start);
@@ -331,7 +346,7 @@ int main()
                     }
                     cout << endl;
                     
-                    cout << "\nMomenty (wejscia / wyjscia): " << endl;
+                    cout << "\nMomenty (wejscia / wyjscia): " << endl; // pierwsza liczba to ile krokow trzeba zeby wejsc a druga zeby wyjsc z wierzcholka
                     for(int i = 1; i <= n; i++) {
                         if(czas_wejscia[i] > 0)
                             cout << "Wierzcholek " << i << ": " << czas_wejscia[i] << " / " << czas_wyjscia[i] << endl;
