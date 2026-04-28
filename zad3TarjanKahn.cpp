@@ -20,11 +20,11 @@ typedef vector<vector<int>> MacierzSasiedztwa;
 typedef vector<vector<int>> ListaNastepnikow;
 typedef vector<krawedz> ListaKrawedzi;
 
-vector<int> odwiedzone;
+vector<int> odwiedzone; //0 to nieodwiedzony, 1 szary (w trakcie odwiedzania), 2 odwiedzony
 vector<int> czas_wejscia;
 vector<int> czas_wyjscia;
-vector<int> stos_wynikowy;
-vector<int> sciezka;
+vector<int> stos_wynikowy; //posortowane wierzcholki
+vector<int> sciezka; // sluzy do wypisania cyklu na ekran
 
 bool cykl = false;
 int licznik = 0;
@@ -102,7 +102,7 @@ void tarjan_ln(const ListaNastepnikow& ln, int v) { //v to wierzcholek od ktoreg
 	for(int i=0; i<ln[v].size(); i++) {
 		int sasiad = ln[v][i];
 
-		if(odwiedzone[sasiad] == 1) { // cykl znaleziony
+		if(odwiedzone[sasiad] == 1) { // cykl znaleziony bo to oznacza ze juz bylam na tym wierzcholu wczesniej
 			cykl = true;
 			cout << "BLAD: Cykl wykryty!" << endl;
 			cout << "Wierzcholki tworzace cykl: ";
@@ -111,7 +111,7 @@ void tarjan_ln(const ListaNastepnikow& ln, int v) { //v to wierzcholek od ktoreg
 				int w = sciezka[i];
 
 				if(w == sasiad) {
-					w_cyklu = true;
+					w_cyklu = true; //jezeli natrafilam na ten sam wierzcholek to znaczy ze jest zapetlenie
 				}
 				if(w_cyklu) cout << w << " ";
 			}
@@ -124,7 +124,7 @@ void tarjan_ln(const ListaNastepnikow& ln, int v) { //v to wierzcholek od ktoreg
 		}
 	}
 
-	odwiedzone[v] = 2;          // 2 to odwiedzony i bez cyklu
+	odwiedzone[v] = 2;          // 2 to odwiedzony i bez cyklu, wszystkie krawedzie wychodzace zostaly sprawdzone
 	czas_wyjscia[v] = ++licznik;  // Zapisujemy moment przetworzenia
 	stos_wynikowy.push_back(v); //dodaje do wyniku
 	sciezka.pop_back(); //usuwa ostatni wierzcholek
@@ -137,7 +137,7 @@ void tarjan_ms(const MacierzSasiedztwa& ms, int v) {
 	sciezka.push_back(v);
 
 	for(int i = 1; i < ms.size(); i++) {
-		if(ms[v][i] == true) {
+		if(ms[v][i] == true) { //inaczej ms[v][i] == 1
 			int sasiad = i;
 
 			if(odwiedzone[sasiad] == 1) {
@@ -428,6 +428,11 @@ bool wczytajZPliku(string nazwa, MacierzSasiedztwa& ms, ListaNastepnikow& ln, Li
 		int u, v;
 		plik >> u >> v;
 
+		if (u < 1 || u > n || v < 1 || v > n) {
+			cout << "Krawedz poza zakresem! Pomijam.\n";
+			continue;
+		}
+
 		ms[u][v] = 1;
 		ln[u].push_back(v);
 		lk.push_back({u, v});
@@ -463,7 +468,7 @@ void demo() {
 			cin >> m;
 
 			if (m < 1) {
-				cout << "m musi byæ wieksze od 1" << endl;
+				cout << "m musi byÃ¦ wieksze od 1" << endl;
 			}
 
 			if (m > ile) {
@@ -547,7 +552,7 @@ int main() {
 		if (x == 0) break;
 		else if (x == 1) demo();
 		else if (x == 2) eksperyment();
-		else cout << "Niepoprawny wybór. Spróbuj jeszcze raz." << endl;
+		else cout << "Niepoprawny wybÃ³r. SprÃ³buj jeszcze raz." << endl;
 	}
 	return 0;
 }
