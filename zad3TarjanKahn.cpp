@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <stack>
+#include<cmath>
 
 using namespace std;
 
@@ -283,6 +284,10 @@ double kahn_ln(const ListaNastepnikow& ln, int n, bool demo) {
 		for (int i = 1; i <= n; i++)
 			if (in_degree[i] > 0) cout << i << " ";
 		cout << endl;
+	} else if (demo) {
+		cout << "Sortowanie: ";
+		for (int v : result) cout << v << " ";
+		cout << endl;
 	}
 
 	auto end = chrono::high_resolution_clock::now();
@@ -319,6 +324,10 @@ double kahn_lk(const ListaKrawedzi& lk, int n, bool demo) {
 		for (int i = 1; i <= n; i++)
 			if (in_degree[i] > 0) cout << i << " ";
 		cout << endl;
+	} else if (demo) {
+		cout << "Sortowanie: ";
+		for (int v : result) cout << v << " ";
+		cout << endl;
 	}
 	auto end = chrono::high_resolution_clock::now();
 	return chrono::duration<double, milli>(end - start).count();
@@ -348,8 +357,7 @@ void wypisz_lk(const ListaKrawedzi& lk) {
 		cout << e.u << " -> " << e.v << endl;
 }
 
-void uruchomTarjan(int rep, const MacierzSasiedztwa& ms, const ListaNastepnikow& ln, const ListaKrawedzi& lk, int n, int start) {
-	auto start_time = chrono::high_resolution_clock::now();
+double uruchomTarjan(int rep, const MacierzSasiedztwa& ms, const ListaNastepnikow& ln, const ListaKrawedzi& lk, int n, int start,bool demo) {
 	odwiedzone.assign(n + 1, 0);
 	czas_wejscia.assign(n + 1, 0);
 	czas_wyjscia.assign(n + 1, 0);
@@ -358,39 +366,47 @@ void uruchomTarjan(int rep, const MacierzSasiedztwa& ms, const ListaNastepnikow&
 	cykl = false;
 	licznik = 0;
 
+	if (demo) {
+        if (rep == 1) wypisz_ms(ms, n);
+        else if (rep == 2) wypisz_ln(ln, n);
+        else if (rep == 3) wypisz_lk(lk);
+    }
+	auto start_time = chrono::high_resolution_clock::now();
+
 	if (rep == 1) {
-		wypisz_ms(ms, n);
 		tarjan_ms(ms, start);
 		for (int i = 1; i <= n; i++)
 			if (odwiedzone[i] == 0) tarjan_ms(ms, i);
 	} else if (rep == 2) {
-		wypisz_ln(ln, n);
 		tarjan_ln(ln, start);
 		for (int i = 1; i <= n; i++)
 			if (odwiedzone[i] == 0) tarjan_ln(ln, i);
 	} else if (rep == 3) {
-		wypisz_lk(lk);
 		tarjan_lk(lk, start);
 		for (int i = 1; i <= n; i++)
 			if (odwiedzone[i] == 0) tarjan_lk(lk, i);
 	}
-
-	if (!cykl) {
-		cout << "Sortowanie: ";
-		for (int i = stos_wynikowy.size()-1; i >= 0; i--)
-			cout << stos_wynikowy[i] << " ";
-		cout << endl;
-	}
-	if (!cykl) {
-		cout << "Czasy wejscia/wyjscia:\n";
-		for (int i = 1; i <= n; i++) {
-			cout << "V" << i << ": "
-			     << czas_wejscia[i] << "/"
-			     << czas_wyjscia[i] << endl;
-		}
-	}
 	auto end_time = chrono::high_resolution_clock::now();
-	cout << "Czas wykonania: " << chrono::duration<double, milli>(end_time - start_time).count() << " ms\n";
+    double czas_trwania = chrono::duration<double, milli>(end_time - start_time).count();
+
+	if(demo)
+	{
+		if (!cykl) {
+			cout << "Sortowanie: ";
+			for (int i = stos_wynikowy.size()-1; i >= 0; i--)
+				cout << stos_wynikowy[i] << " ";
+			cout << endl;
+
+			cout << "Czasy wejscia/wyjscia:\n";
+			for (int i = 1; i <= n; i++) {
+				cout << "V" << i << ": "
+					<< czas_wejscia[i] << "/"
+					<< czas_wyjscia[i] << endl;
+			}
+		}
+		cout << "Czas wykonania: " << czas_trwania << " ms\n";
+	}
+	return czas_trwania;
 }
 
 void uruchomKahn(int rep, const MacierzSasiedztwa& ms, const ListaNastepnikow& ln, const ListaKrawedzi& lk, int n) {
@@ -515,11 +531,11 @@ void demo() {
 				cout << "Niepoprawny wierzcholek!\n";
 			}
 		} while (start < 1 || start > n);
-		uruchomTarjan(rep, ms, ln, lk, n, start);
+		uruchomTarjan(rep, ms, ln, lk, n, start,true);
 	}
 }
 
-void eksperyment() {
+/*void eksperyment() {
 	int n = 1000;
 	double s = 0.5;
 
@@ -540,6 +556,99 @@ void eksperyment() {
 	uruchomTarjan(1,ms,ln,lk,n,1);
 	uruchomTarjan(2,ms,ln,lk,n,1);
 	uruchomTarjan(3,ms,ln,lk,n,1);
+}*/
+
+pair<double, double> oblicz_statystyki(const vector<double>& czasy) {
+    double suma = 0;
+    for(double c : czasy) suma += c;
+    double srednia = suma / czasy.size();
+
+    double wariancja = 0;
+    for(double c : czasy) wariancja += (c - srednia) * (c - srednia);
+    double odchylenie = sqrt(wariancja / czasy.size());
+
+    return {srednia, odchylenie};
+}
+
+void eksperyment() {
+
+    int proby = 10;
+    cout << ">>> EKSPERYMENT 1: Wzrost liczby wierzcholkow (n) <<<" << endl;
+    
+    vector<int> exp1_n = {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000}; 
+    vector<double> exp1_s = {0.1, 0.5, 0.9}; 
+
+    ofstream plik1("eksperyment_1.csv");
+    plik1 << "N;Gestosc;Kahn_MS_sr;Kahn_MS_odch;Kahn_LN_sr;Kahn_LN_odch;Kahn_LK_sr;Kahn_LK_odch;Tarjan_MS_sr;Tarjan_MS_odch;Tarjan_LN_sr;Tarjan_LN_odch;Tarjan_LK_sr;Tarjan_LK_odch\n";
+
+    for (double s : exp1_s) {
+        for (int n : exp1_n) {
+            vector<double> c_k_ms(proby), c_k_ln(proby), c_k_lk(proby);
+            vector<double> c_t_ms(proby), c_t_ln(proby), c_t_lk(proby);
+
+            for (int p = 0; p < proby; p++) {
+                MacierzSasiedztwa ms; ListaNastepnikow ln; ListaKrawedzi lk;
+                generujDAG_ms(n, s, ms); generujDAG_ln(n, s, ln); generujDAG_lk(n, s, lk);
+
+                c_k_ms[p] = kahn_ms(ms, n, false);
+                c_k_ln[p] = kahn_ln(ln, n, false);
+                c_k_lk[p] = kahn_lk(lk, n, false);
+
+                c_t_ms[p] = uruchomTarjan(1, ms, ln, lk, n, 1, false);
+                c_t_ln[p] = uruchomTarjan(2, ms, ln, lk, n, 1, false);
+                c_t_lk[p] = uruchomTarjan(3, ms, ln, lk, n, 1, false);
+            }
+
+            auto stat_k_ms = oblicz_statystyki(c_k_ms); auto stat_k_ln = oblicz_statystyki(c_k_ln); auto stat_k_lk = oblicz_statystyki(c_k_lk);
+            auto stat_t_ms = oblicz_statystyki(c_t_ms); auto stat_t_ln = oblicz_statystyki(c_t_ln); auto stat_t_lk = oblicz_statystyki(c_t_lk);
+
+            plik1 << n << ";" << s << ";" 
+                  << stat_k_ms.first << ";" << stat_k_ms.second << ";" << stat_k_ln.first << ";" << stat_k_ln.second << ";" << stat_k_lk.first << ";" << stat_k_lk.second << ";"
+                  << stat_t_ms.first << ";" << stat_t_ms.second << ";" << stat_t_ln.first << ";" << stat_t_ln.second << ";" << stat_t_lk.first << ";" << stat_t_lk.second << "\n";
+            
+            cout << "Exp 1 - Wykonano: N=" << n << ", Gestosc=" << s * 100 << "%" << endl;
+        }
+    }
+    plik1.close();
+
+    cout << "\n>>> EKSPERYMENT 2: Wzrost nasycenia (s) <<<" << endl;
+    
+    int exp2_n = 500; 
+    vector<double> exp2_s = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+
+    ofstream plik2("eksperyment_2.csv");
+    plik2 << "N;Gestosc;Kahn_MS_sr;Kahn_MS_odch;Kahn_LN_sr;Kahn_LN_odch;Kahn_LK_sr;Kahn_LK_odch;Tarjan_MS_sr;Tarjan_MS_odch;Tarjan_LN_sr;Tarjan_LN_odch;Tarjan_LK_sr;Tarjan_LK_odch\n";
+
+    for (double s : exp2_s) {
+        vector<double> c_k_ms(proby), c_k_ln(proby), c_k_lk(proby);
+        vector<double> c_t_ms(proby), c_t_ln(proby), c_t_lk(proby);
+
+        for (int p = 0; p < proby; p++) {
+            MacierzSasiedztwa ms; ListaNastepnikow ln; ListaKrawedzi lk;
+            generujDAG_ms(exp2_n, s, ms); generujDAG_ln(exp2_n, s, ln); generujDAG_lk(exp2_n, s, lk);
+
+            c_k_ms[p] = kahn_ms(ms, exp2_n, false);
+            c_k_ln[p] = kahn_ln(ln, exp2_n, false);
+            c_k_lk[p] = kahn_lk(lk, exp2_n, false);
+
+            c_t_ms[p] = uruchomTarjan(1, ms, ln, lk, exp2_n, 1, false);
+            c_t_ln[p] = uruchomTarjan(2, ms, ln, lk, exp2_n, 1, false);
+            c_t_lk[p] = uruchomTarjan(3, ms, ln, lk, exp2_n, 1, false);
+        }
+
+        auto stat_k_ms = oblicz_statystyki(c_k_ms); auto stat_k_ln = oblicz_statystyki(c_k_ln); auto stat_k_lk = oblicz_statystyki(c_k_lk);
+        auto stat_t_ms = oblicz_statystyki(c_t_ms); auto stat_t_ln = oblicz_statystyki(c_t_ln); auto stat_t_lk = oblicz_statystyki(c_t_lk);
+
+        plik2 << exp2_n << ";" << s << ";" 
+              << stat_k_ms.first << ";" << stat_k_ms.second << ";" << stat_k_ln.first << ";" << stat_k_ln.second << ";" << stat_k_lk.first << ";" << stat_k_lk.second << ";"
+              << stat_t_ms.first << ";" << stat_t_ms.second << ";" << stat_t_ln.first << ";" << stat_t_ln.second << ";" << stat_t_lk.first << ";" << stat_t_lk.second << "\n";
+        
+        cout << "Exp 2 - Wykonano: N=" << exp2_n << ", Gestosc=" << s * 100 << "%" << endl;
+    }
+    plik2.close();
+
+    cout << "\n--- ZAKONCZONO! ---" << endl;
+    cout << "Wyniki sa w plikach 'eksperyment_1.csv' oraz 'eksperyment_2.csv'." << endl;
 }
 
 int main() {
@@ -556,4 +665,3 @@ int main() {
 	}
 	return 0;
 }
-
